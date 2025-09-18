@@ -10,6 +10,11 @@ migrateup:
 migratedown:
 	migrate -path db/migration -database "postgres://root:secret@localhost:5432/simpleBank?sslmode=disable" -verbose down;
 
+sqlc:
+	sqlc generate;
+
 dropdb:
 	docker exec -it postgres12 dropdb simpleBank;
-
+	
+test:
+	go test -v -cover ./...

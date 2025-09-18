@@ -1,0 +1,10 @@
+package main
+import "fmt"
+
+func main() {
+    fmt.Println("Hello, World!")
+    fmt.Println("Hello, Go!")
+    fmt.Println("Hello, Go! Go! Go!")
+    fmt.Println("Hello, Go! Go! Go! Go!")
+    fmt.Println("Hello, Go! Go! Go! Go! Go!")
+}
