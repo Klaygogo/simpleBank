@@ -15,10 +15,12 @@ const (
 )
 
 var testQueries *Queries
+var pool *pgxpool.Pool
 
 func TestMain(m *testing.M) {
 	// 1. 使用 pgxpool 建立连接池（推荐生产环境使用）
-	pool, err := pgxpool.New(context.Background(), dbSource)
+	var err error
+	pool, err = pgxpool.New(context.Background(), dbSource)
 	if err != nil {
 		log.Fatal("无法创建数据库连接池:", err)
 	}
