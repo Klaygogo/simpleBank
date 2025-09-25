@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"fmt"
+
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool" //  导入pgxpool包，这是一个PostgreSQL连接池库
 )
@@ -11,6 +12,8 @@ type Store struct {
 	*Queries
 	db *pgxpool.Pool //  声明一个pgxpool.Pool类型的字段，用于管理PostgreSQL连接池
 }
+
+var txKey = struct{}{}
 
 func NewStore(db *pgxpool.Pool) *Store {
 	return &Store{
@@ -50,10 +53,9 @@ type TransferTxResult struct {
 	ToEntry     Entry
 }
 
-// 相当于是实现了具体的callback回调函数
 func (store *Store) TransferTx(ctx context.Context, arg TransferTxParams) (TransferTxResult, error) {
 	var result TransferTxResult
-
+	// 相当于是实现了具体的callback回调函数
 	err := store.execTx(ctx, func(q *Queries) error {
 		var err error
 		result.Transfer, err = q.CreateTransfer(ctx, CreateTransferParams{
@@ -64,7 +66,6 @@ func (store *Store) TransferTx(ctx context.Context, arg TransferTxParams) (Trans
 		if err != nil {
 			return err
 		}
-
 		result.FromEntry, err = q.CreateEntry(ctx, CreateEntryParams{
 			AccountID: arg.FromAccountID,
 			Amount:    -arg.Amount,
@@ -72,7 +73,6 @@ func (store *Store) TransferTx(ctx context.Context, arg TransferTxParams) (Trans
 		if err != nil {
 			return err
 		}
-
 		result.ToEntry, err = q.CreateEntry(ctx, CreateEntryParams{
 			AccountID: arg.ToAccountID,
 			Amount:    arg.Amount,
@@ -81,7 +81,34 @@ func (store *Store) TransferTx(ctx context.Context, arg TransferTxParams) (Trans
 			return err
 		}
 
-		// TODO: update accounts' balance
+		update1 := AddAccountBalanceParams{
+			ID:     arg.FromAccountID,
+			Amount: -arg.Amount,
+		}
+		update2 := AddAccountBalanceParams{
+			ID:     arg.ToAccountID,
+			Amount: arg.Amount,
+		}
+
+		if arg.FromAccountID < arg.ToAccountID {
+			result.FromAccount, err = q.AddAccountBalance(ctx, update1)
+			if err != nil {
+				return err
+			}
+			result.ToAccount, err = q.AddAccountBalance(ctx, update2)
+			if err != nil {
+				return err
+			}
+		} else {
+			result.ToAccount, err = q.AddAccountBalance(ctx, update2)
+			if err != nil {
+				return err
+			}
+			result.FromAccount, err = q.AddAccountBalance(ctx, update1)
+			if err != nil {
+			}
+		}
+
 		return nil
 	})
 	return result, err
