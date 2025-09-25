@@ -11,12 +11,34 @@ on:
 
 jobs:
 
-  build:
+  Test:
+    name: test
     runs-on: ubuntu-latest
+
+    services:
+      # Label used to access the service container
+      postgres:
+        # Docker Hub image
+        image: postgres:12
+        # Provide the password for postgres
+        env:
+          POSTGRES_USER: root          # 与连接字符串中的用户名匹配
+          POSTGRES_PASSWORD: secret    # 与连接字符串中的密码匹配
+          POSTGRES_DB: simpleBank 
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
     - name: Check out repository code
       uses: actions/checkout@v4
 
+    - name: Init schema
+      run: make migrateup
+      
+    - name: Set up Go
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
