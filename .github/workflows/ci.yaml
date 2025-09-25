@@ -21,6 +21,8 @@ jobs:
         # Docker Hub image
         image: postgres:12
         # Provide the password for postgres
+        ports:
+          - 5432:5432
         env:
           POSTGRES_USER: root          # 与连接字符串中的用户名匹配
           POSTGRES_PASSWORD: secret    # 与连接字符串中的密码匹配
