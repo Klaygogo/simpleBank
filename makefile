@@ -18,3 +18,8 @@ dropdb:
 	
 test:
 	go test -v -cover ./...
+
+server:
+	go run main.go
+
+.PHONY: postgres createdb migrateup migratedown sqlc dropdb test server     
