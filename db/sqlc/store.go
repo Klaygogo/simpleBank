@@ -9,8 +9,8 @@ import (
 )
 
 type Store interface {
-	Queries
 	TransferTx(ctx context.Context, arg TransferTxParams) (TransferTxResult, error)
+	Querier
 }
 
 type SQLStore struct {
@@ -20,7 +20,7 @@ type SQLStore struct {
 
 var txKey = struct{}{}
 
-func NewStore(db *pgxpool.Pool) *SQLStore {
+func NewStore(db *pgxpool.Pool) Store {
 	return &SQLStore{
 		db:      db,
 		Queries: New(db),

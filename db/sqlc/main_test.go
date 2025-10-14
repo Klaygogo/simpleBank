@@ -6,8 +6,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/Klaygogo/simplebank/util"
 	"github.com/jackc/pgx/v5/pgxpool" // 导入 pgx 连接池
-	"github.com/techschool/simplebank/util"
 )
 
 var testQueries *Queries

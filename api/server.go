@@ -8,7 +8,7 @@ import (
 )
 
 type Server struct {
-	store  *db.SQLStore
+	store  db.Store
 	router *gin.Engine
 }
 
@@ -22,7 +22,7 @@ func (server *Server) setupRoutes() {
 	server.router.GET("/transfers", server.listTransfer)
 }
 
-func NewServer(store *db.SQLStore) *Server {
+func NewServer(store db.Store) *Server {
 	r := gin.Default()
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
 		v.RegisterValidation("currency", validCurrency)
