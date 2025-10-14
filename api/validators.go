@@ -1,8 +1,6 @@
 package api
 
 import (
-	"strings"
-
 	"github.com/Klaygogo/simplebank/util"
 	"github.com/go-playground/validator/v10"
 )
