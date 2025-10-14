@@ -8,21 +8,26 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool" //  导入pgxpool包，这是一个PostgreSQL连接池库
 )
 
-type Store struct {
+type Store interface {
+	Queries
+	TransferTx(ctx context.Context, arg TransferTxParams) (TransferTxResult, error)
+}
+
+type SQLStore struct {
 	*Queries
-	db *pgxpool.Pool //  声明一个pgxpool.Pool类型的字段，用于管理PostgreSQL连接池
+	db *pgxpool.Pool
 }
 
 var txKey = struct{}{}
 
-func NewStore(db *pgxpool.Pool) *Store {
-	return &Store{
+func NewStore(db *pgxpool.Pool) *SQLStore {
+	return &SQLStore{
 		db:      db,
 		Queries: New(db),
 	}
 }
 
-func (store *Store) execTx(ctx context.Context, fn func(*Queries) error) error {
+func (store *SQLStore) execTx(ctx context.Context, fn func(*Queries) error) error {
 	tx, err := store.db.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		return err
@@ -53,7 +58,7 @@ type TransferTxResult struct {
 	ToEntry     Entry
 }
 
-func (store *Store) TransferTx(ctx context.Context, arg TransferTxParams) (TransferTxResult, error) {
+func (store *SQLStore) TransferTx(ctx context.Context, arg TransferTxParams) (TransferTxResult, error) {
 	var result TransferTxResult
 	// 相当于是实现了具体的callback回调函数
 	err := store.execTx(ctx, func(q *Queries) error {
