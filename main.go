@@ -20,7 +20,10 @@ func main() {
 		log.Fatal("无法创建数据库连接池:", err)
 	}
 	store := db.NewStore(pool)
-	server := api.NewServer(store)
+	server, err := api.NewServer(store, config)
+	if err != nil {
+		log.Fatal("无法创建服务器:", err)
+	}
 	err = server.Start(config.ServerAddress)
 	if err != nil {
 		log.Fatal("无法启动服务器:", err)

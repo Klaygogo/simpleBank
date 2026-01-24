@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 	db "github.com/Klaygogo/simplebank/db/sqlc"
+	token "github.com/Klaygogo/simplebank/token"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
 	"net/http"
@@ -41,12 +42,17 @@ func (server *Server) createTransfer(c *gin.Context) {
 	}
 	// from account
 	if !server.validAccount(c, req.FromAccountID, req.Currency) {
+		err := fmt.Errorf("the fromaccount has currency mismatch")
+		c.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
 	// to account
 	if !server.validAccount(c, req.ToAccountID, req.Currency) {
+		err := fmt.Errorf("the toaccount has currency mismatch")
+		c.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
+
 	arg := db.TransferTxParams{
 		FromAccountID: req.FromAccountID,
 		ToAccountID:   req.ToAccountID,
@@ -63,6 +69,14 @@ func (server *Server) createTransfer(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
+	// auth
+	authPayload := c.MustGet(authorizationPayloadKey).(*token.Payload)
+	if fromAccount.Owner != authPayload.Username {
+		err := fmt.Errorf("from account does not belong to the authenticated user")
+		c.JSON(http.StatusUnauthorized, errorResponse(err))
+		return
+	}
+
 	result, err := server.store.TransferTx(c, arg)
 	if err != nil {
 		if err == pgx.ErrNoRows {

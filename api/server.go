@@ -1,38 +1,56 @@
 package api
 
 import (
+	"fmt"
+
 	db "github.com/Klaygogo/simplebank/db/sqlc"
+	token "github.com/Klaygogo/simplebank/token"
+	"github.com/Klaygogo/simplebank/util"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
 )
 
 type Server struct {
-	store  db.Store
-	router *gin.Engine
+	config     util.Config
+	store      db.Store
+	router     *gin.Engine
+	tokenMaker token.Maker
 }
 
 func (server *Server) setupRoutes() {
-	server.router.POST("/accounts", server.createAccount)
-	server.router.GET("/accounts/:id", server.getAccount)
-	server.router.GET("/accounts", server.listAccount)
+	authRouter := server.router.Group("/").Use(authMiddleware(server.tokenMaker))
 
-	server.router.POST("/transfers", server.createTransfer)
-	server.router.GET("/transfers/:id", server.getTransfer)
-	server.router.GET("/transfers", server.listTransfer)
+	authRouter.POST("/accounts", server.createAccount)
+	authRouter.GET("/accounts/:id", server.getAccount)
+	authRouter.GET("/accounts", server.listAccount)
+
+	authRouter.POST("/transfers", server.createTransfer)
+	authRouter.GET("/transfers/:id", server.getTransfer)
+	authRouter.GET("/transfers", server.listTransfer)
+
+	server.router.POST("/users", server.createUser)
+	server.router.POST("/users/login", server.loginUser)
+	authRouter.GET("/users/:username", server.getUser)
 }
 
-func NewServer(store db.Store) *Server {
+func NewServer(store db.Store, config util.Config) (*Server, error) {
+	tokenMaker, err := token.NewPasetoMaker(config.TokenSyncKey)
+	if err != nil {
+		return nil, fmt.Errorf("cannot create tokenMaker: %w", err)
+	}
 	r := gin.Default()
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
 		v.RegisterValidation("currency", validCurrency)
 	}
 	server := &Server{
-		store:  store,
-		router: r,
+		config:     config,
+		store:      store,
+		router:     r,
+		tokenMaker: tokenMaker,
 	}
 	server.setupRoutes()
-	return server
+	return server, nil
 }
 
 func (server *Server) Start(address string) error {
