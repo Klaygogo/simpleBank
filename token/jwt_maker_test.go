@@ -36,9 +36,8 @@ func TestExpiredJWTMaker(t *testing.T) {
 	required.NoError(t, err)
 
 	username := util.RandomOwner()
-	duration := time.Second * 0 // expired token
 
-	token, err := maker.CreateToken(username, duration)
+	token, err := maker.CreateToken(username, -time.Second)
 	required.NoError(t, err)
 	required.NotEmpty(t, token)
 
