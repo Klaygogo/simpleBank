@@ -1,0 +1,53 @@
+# This workflow will build a golang project and push image to private docker registry
+name: Deploy service
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  Deploy:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+     
+
+      - name: Configure Docker for insecure registry
+        run: |
+          # 创建/修改Docker daemon配置文件,允许47.93.217.57的HTTP访问
+          sudo mkdir -p /etc/docker
+          sudo tee /etc/docker/daemon.json > /dev/null <<EOF
+          {
+            "insecure-registries": ["47.93.217.57:5000"]
+          }
+          EOF
+          # 重启Docker服务使配置生效
+          sudo systemctl daemon-reload
+          sudo systemctl restart docker
+          # 验证配置是否生效
+          docker info | grep -i insecure
+
+      - name: Build Docker Image
+        env:
+          REGISTRY_IP: 47.93.217.57
+          REGISTRY_PORT: 5000
+          IMAGE_NAME: simplebank-api
+          # 用Git短提交哈希作为镜像标签，确保唯一性
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t ${REGISTRY_IP}:${REGISTRY_PORT}/${IMAGE_NAME}:${IMAGE_TAG} -t ${REGISTRY_IP}:${REGISTRY_PORT}/${IMAGE_NAME}:latest .
+
+      - name: Push Docker Image
+        env:
+          REGISTRY_IP: 47.93.217.57
+          REGISTRY_PORT: 5000
+          IMAGE_NAME: simplebank-api
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          # 推送带哈希标签和latest标签的镜像
+          docker push ${REGISTRY_IP}:${REGISTRY_PORT}/${IMAGE_NAME}:${IMAGE_TAG}
+          docker push ${REGISTRY_IP}:${REGISTRY_PORT}/${IMAGE_NAME}:latest
