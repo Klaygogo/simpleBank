@@ -32,6 +32,8 @@ func (server *Server) setupRoutes() {
 	server.router.POST("/users", server.createUser)
 	server.router.POST("/users/login", server.loginUser)
 	authRouter.GET("/users/:username", server.getUser)
+
+	authRouter.POST("/tokens/renew_access", server.renewAccessToken)
 }
 
 func NewServer(store db.Store, config util.Config) (*Server, error) {

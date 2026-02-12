@@ -107,7 +107,7 @@ type loginUserResponse struct {
 	RefreshToken          string       `json:"refresh_token"`
 	RefreshTokenExpiresAt time.Time    `json:"refresh_token_expires_at"`
 	AccessTokenExpiresAt  time.Time    `json:"access_token_expires_at"`
-	sessionID             pgtype.UUID  `json:"session_id"`
+	SessionID             pgtype.UUID  `json:"session_id"`
 	User                  userResponse `json:"user"`
 }
 
@@ -156,7 +156,7 @@ func (server *Server) loginUser(c *gin.Context) {
 		RefreshToken:          refreshToken,
 		RefreshTokenExpiresAt: refreshPayload.ExpiredAt.Time,
 		AccessTokenExpiresAt:  accessPayload.ExpiredAt.Time,
-		sessionID:             session.ID,
+		SessionID:             session.ID,
 		User:                  newUserResponse(user),
 	}
 	c.JSON(http.StatusOK, resp)
