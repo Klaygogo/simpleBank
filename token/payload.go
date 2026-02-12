@@ -2,8 +2,10 @@ package token
 
 import (
 	"errors"
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 var (
@@ -13,10 +15,10 @@ var (
 
 // Payload contains the data of the token
 type Payload struct {
-	ID        uuid.UUID `json:"id"`
-	Username  string    `json:"username"`
-	IssuedAt  time.Time `json:"issued_at"`
-	ExpiredAt time.Time `json:"expired_at"`
+	ID        pgtype.UUID        `json:"id"`
+	Username  string             `json:"username"`
+	IssuedAt  pgtype.Timestamptz `json:"issued_at"`
+	ExpiredAt pgtype.Timestamptz `json:"expired_at"`
 }
 
 func NewPayload(username string, duration time.Duration) (*Payload, error) {
@@ -26,17 +28,26 @@ func NewPayload(username string, duration time.Duration) (*Payload, error) {
 	}
 
 	payload := &Payload{
-		ID:        tokenID,
-		Username:  username,
-		IssuedAt:  time.Now(),
-		ExpiredAt: time.Now().Add(duration),
+		ID: pgtype.UUID{
+			Bytes: tokenID,
+			Valid: true,
+		},
+		Username: username,
+		IssuedAt: pgtype.Timestamptz{
+			Time:  time.Now(),
+			Valid: true,
+		},
+		ExpiredAt: pgtype.Timestamptz{
+			Time:  time.Now().Add(duration),
+			Valid: true,
+		},
 	}
 
 	return payload, nil
 }
 
 func (payload *Payload) Valid() error {
-	if payload.ExpiredAt.Before(time.Now()) {
+	if time.Now().After(payload.ExpiredAt.Time) {
 		return ErrExpiredToken
 	}
 	return nil

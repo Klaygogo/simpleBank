@@ -3,6 +3,7 @@ package api
 import (
 	"database/sql"
 	"net/http"
+	"time"
 
 	db "github.com/Klaygogo/simplebank/db/sqlc"
 	util "github.com/Klaygogo/simplebank/util"
@@ -102,8 +103,12 @@ type loginUserRequest struct {
 }
 
 type loginUserResponse struct {
-	AccessToken string       `json:"access_token"`
-	User        userResponse `json:"user"`
+	AccessToken           string       `json:"access_token"`
+	RefreshToken          string       `json:"refresh_token"`
+	RefreshTokenExpiresAt time.Time    `json:"refresh_token_expires_at"`
+	AccessTokenExpiresAt  time.Time    `json:"access_token_expires_at"`
+	sessionID             pgtype.UUID  `json:"session_id"`
+	User                  userResponse `json:"user"`
 }
 
 func (server *Server) loginUser(c *gin.Context) {
@@ -127,14 +132,32 @@ func (server *Server) loginUser(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, errorResponse(err))
 		return
 	}
-	token, err := server.tokenMaker.CreateToken(user.Username, server.config.AccessTokenDuration)
+	accessToken, accessPayload, err := server.tokenMaker.CreateToken(user.Username, server.config.AccessTokenDuration)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+	refreshToken, refreshPayload, err := server.tokenMaker.CreateToken(user.Username, server.config.RefreshTokenDuration)
+	session, err := server.store.CreateSession(c, db.CreateSessionParams{
+		ID:           refreshPayload.ID,
+		Username:     user.Username,
+		RefreshToken: refreshToken,
+		UserAgent:    c.Request.UserAgent(),
+		ClientIp:     c.ClientIP(),
+		IsBlocked:    false,
+		ExpireAt:     refreshPayload.ExpiredAt,
+	})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 	resp := loginUserResponse{
-		AccessToken: token,
-		User:        newUserResponse(user),
+		AccessToken:           accessToken,
+		RefreshToken:          refreshToken,
+		RefreshTokenExpiresAt: refreshPayload.ExpiredAt.Time,
+		AccessTokenExpiresAt:  accessPayload.ExpiredAt.Time,
+		sessionID:             session.ID,
+		User:                  newUserResponse(user),
 	}
 	c.JSON(http.StatusOK, resp)
 }

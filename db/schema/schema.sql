@@ -1,3 +1,14 @@
+CREATE TABLE "sessions" (
+  "id" uuid PRIMARY KEY,
+  "username" varchar NOT NULL,
+  "refresh_token" varchar NOT NULL,
+  "client_ip" varchar NOT NULL,
+  "user_agent" varchar NOT NULL,
+  "is_blocked" boolean NOT NULL DEFAULT false,
+  "expire_at" timestamptz NOT NULL,
+  "created_at" timestamptz NOT NULL DEFAULT 'now()'
+);
+
 CREATE TABLE "users" (
   "username" varchar PRIMARY KEY,
   "hashed_password" varchar NOT NULL,
@@ -53,3 +64,5 @@ ALTER TABLE "entries" ADD FOREIGN KEY ("account_id") REFERENCES "accounts" ("id"
 ALTER TABLE "transfers" ADD FOREIGN KEY ("from_account_id") REFERENCES "accounts" ("id");
 
 ALTER TABLE "transfers" ADD FOREIGN KEY ("to_account_id") REFERENCES "accounts" ("id");
+
+ALTER TABLE "sessions" ADD FOREIGN KEY ("username") REFERENCES "users" ("username");

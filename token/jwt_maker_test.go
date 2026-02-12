@@ -18,8 +18,9 @@ func TestJWTMaker(t *testing.T) {
 
 	issuedAt := time.Now()
 	expiredAt := issuedAt.Add(duration)
-	token, err := maker.CreateToken(username, duration)
+	token, payload, err := maker.CreateToken(username, duration)
 	required.NoError(t, err)
+	required.NotEmpty(t, payload)
 	required.NotEmpty(t, token)
 
 	claims, err := maker.VerifyToken(token)
@@ -27,8 +28,8 @@ func TestJWTMaker(t *testing.T) {
 	required.NotEmpty(t, claims)
 
 	required.Equal(t, username, claims.Username)
-	required.WithinDuration(t, issuedAt, claims.IssuedAt, time.Second)
-	required.WithinDuration(t, expiredAt, claims.ExpiredAt, time.Second)
+	required.WithinDuration(t, issuedAt, claims.IssuedAt.Time, time.Second)
+	required.WithinDuration(t, expiredAt, claims.ExpiredAt.Time, time.Second)
 }
 
 func TestExpiredJWTMaker(t *testing.T) {
@@ -37,8 +38,9 @@ func TestExpiredJWTMaker(t *testing.T) {
 
 	username := util.RandomOwner()
 
-	token, err := maker.CreateToken(username, -time.Second)
+	token, payload, err := maker.CreateToken(username, -time.Second)
 	required.NoError(t, err)
+	required.NotEmpty(t, payload)
 	required.NotEmpty(t, token)
 
 	_, err = maker.VerifyToken(token)
