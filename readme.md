@@ -143,9 +143,7 @@ simpleBank/
 ## 📄 License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 📞 Contact
-If you have questions or suggestions, open an issue or contact the maintainer at [your-email@example.com] (replace with actual contact if applicable).
 
----
 
 *Made with 💙 for learning backend development and banking system fundamentals*
+
